@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Halısaha Online</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@400;500;600&display=swap">
@@ -12,8 +14,9 @@
   --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   color-scheme:dark;
 }
+[hidden]{display:none!important}
 html,body{height:100%}
-body{background:var(--turf);color:var(--chalk);font-family:var(--f-body);font-size:16px;overflow:hidden;
+body{margin:0;background:var(--turf);color:var(--chalk);font-family:var(--f-body);font-size:16px;overflow:hidden;
   touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
@@ -500,6 +503,8 @@ function step(){
   if (sim.ph === 'lobby' || sim.ph === 'end') return;
   const b = sim.ball;
   const ps = []; for (const p of sim.players.values()) if (p.tm === 'r' || p.tm === 'b') ps.push(p);
+  // kickoff belongs to a team that actually has players
+  if (sim.ph === 'kick' && ps.length && !ps.some(p => p.tm === sim.kt)) sim.kt = sim.kt === 'r' ? 'b' : 'r';
   for (const p of ps) {
     let [dx, dy, k] = p.in; const m = Math.hypot(dx, dy); if (m > 1) { dx /= m; dy /= m; }
     const acc = k ? P_KACC : P_ACC; p.vx += dx*acc; p.vy += dy*acc;
