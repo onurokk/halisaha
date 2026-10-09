@@ -1,6 +1,17 @@
+<!doctype html>
+<html lang="tr">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Halısaha Online</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0e3521">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Halısaha">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@400;500;600&display=swap">
 <style>
@@ -144,6 +155,12 @@ input.txt::placeholder{color:#6d8c79}
       <p class="status" id="status" role="status"></p>
     </div>
 
+    <div class="card" id="installCard" hidden>
+      <div class="lbl">Uygulama olarak ekle</div>
+      <p class="note" id="installText"></p>
+      <button class="btn btn-ghost btn-sm" id="installBtn" hidden>Telefona yükle</button>
+    </div>
+
     <div class="card" id="roomsCard" hidden>
       <div class="lbl">Açık odalar</div>
       <div class="rooms" id="rooms"></div>
@@ -234,8 +251,34 @@ async function initNet(){
     } catch(e) {}
   }
   Net.ready = true;
+  if (!window.claude) setupInstall();
   if (Net.kind === 'none') setStatus('Çevrimiçi bağlantı kurulamadı. Yine de oda kurup tek başına antrenman yapabilirsin.');
 }
+
+/* ---------- Add to home screen (only on the self-hosted site) ---------- */
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; setupInstall(); });
+window.addEventListener('appinstalled', () => { $('#installCard').hidden = true; });
+function setupInstall(){
+  const standalone = (window.matchMedia && matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches) || navigator.standalone;
+  if (standalone || window.claude) return;
+  const ua = navigator.userAgent;
+  const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const inApp = /WhatsApp|Instagram|FBAN|FBAV|Telegram|Line\//i.test(ua);
+  const card = $('#installCard'), txt = $('#installText'), b = $('#installBtn');
+  if (!isTouch && !installEvt) return;
+  card.hidden = false; b.hidden = true;
+  if (inApp) txt.textContent = 'Bu sayfayı WhatsApp içinde açtın. Sağ üstteki menüden "Tarayıcıda aç" de, sonra oradan ana ekrana ekleyebilirsin.';
+  else if (ios) txt.textContent = 'Safari\'de alttaki Paylaş düğmesine (kare ve ok) dokun, "Ana Ekrana Ekle"yi seç. Oyun telefonunda uygulama gibi ikonla açılır.';
+  else if (installEvt) { txt.textContent = 'Oyunu telefonuna uygulama olarak ekle, ikonuna dokunup tam ekran aç.'; b.hidden = false; }
+  else txt.textContent = 'Chrome\'da sağ üstteki ⋮ menüsünden "Ana ekrana ekle"yi seç. Oyun telefonunda uygulama gibi ikonla açılır.';
+}
+$('#installBtn').addEventListener('click', async () => {
+  if (!installEvt) return;
+  installEvt.prompt();
+  try { const r = await installEvt.userChoice; if (r && r.outcome === 'accepted') $('#installCard').hidden = true; } catch(e){}
+  installEvt = null; $('#installBtn').hidden = true;
+});
 
 function roomCodeTaken(code){
   return Net.kind === 'room' && Net.room.peers().some(p => p.presence && p.presence.hosting === code);
@@ -992,3 +1035,5 @@ requestAnimationFrame(frame);
 netReady = initNet();
 })();
 </script>
+
+</html>
